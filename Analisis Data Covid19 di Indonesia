@@ -1,0 +1,168 @@
+#Rekapitulasi data COVID-19 Indonesia tersedia dalam API publik yang beralamat di https://data.covid19.go.id/public/api/update.json
+
+#1
+library(httr)
+resp <- GET ("https://data.covid19.go.id/public/api/update.json")
+
+#menjalankan fungsi GET(), pada dasarnya hal yang terjadi adalah Anda membuat sebuah permintaan kepada server penyedia API
+
+
+#2
+library(httr)
+resp <- GET("https://data.covid19.go.id/public/api/update.json")
+status_code (resp)
+
+#informasi status code -> https://restfulapi.net/http-status-codes/
+#fungsi status_code() untuk mengetahui status atas permintaan Anda melalui API
+#200 artinya permintaan sukses dipenuhi.
+
+#3
+library(httr)
+resp <- GET("https://data.covid19.go.id/public/api/update.json")
+resp$status_code
+identical(resp$status_code, status_code(resp))
+
+#caralain menggunakan status code
+
+
+#4
+library(httr)
+resp <- GET("https://data.covid19.go.id/public/api/update.json")
+headers(resp)
+
+#fungsi headers() pada resp untuk mengetahui metadata apa saja yang tersimpan, last modified data juga terekam
+
+
+#5
+library(httr)
+resp <- GET("https://data.covid19.go.id/public/api/update.json")
+cov_id_raw <- content(resp, as = "parsed", simplifyVector = TRUE) 
+
+#Fungsi content() tersebut secara cerdas akan menyesuaikan output sesuai dengan jenis berkas yang tersedia, dalam hal ini adalah berkas JSON
+
+
+#6
+length(cov_id_raw)
+names(cov_id_raw)
+cov_id_update <- cov_id_raw$update
+
+#Mengekstraksi isi Respon
+
+
+#7
+lapply(cov_id_update,names) #untuk melihat data/kolom yang tersedia pada covid update
+cov_id_update$penambahan$tanggal
+cov_id_update$penambahan$jumlah_sembuh
+cov_id_update$penambahan$jumlah_meninggal
+cov_id_update$total$jumlah_positif
+cov_id_update$total$jumlah_meninggal
+
+
+#8
+library(httr)
+resp_jabar <- GET("https://data.covid19.go.id/public/api/prov_detail_JAWA_BARAT.json") #provinsi dapat dirubah
+cov_jabar_raw <- content(resp_jabar, as = "parsed", simplifyVector = TRUE)
+
+names(cov_jabar_raw)
+cov_jabar_raw$kasus_total
+cov_jabar_raw$meninggal_persen
+cov_jabar_raw$sembuh_persen
+
+
+#9
+cov_jabar <- cov_jabar_raw$list_perkembangan  #Data historis perkembangan COVID-19 tersebut tersimpan dengan nama list_perkembangan
+str(cov_jabar)
+head(cov_jabar)
+
+
+#10
+library(dplyr)
+new_cov_jabar <-
+  cov_jabar %>% 
+  select(-contains("DIRAWAT_OR_ISOLASI")) %>% 
+  select(-starts_with("AKUMULASI")) %>% 
+  rename(
+    kasus_baru = KASUS,
+    meninggal = MENINGGAL,
+    sembuh = SEMBUH
+    ) %>% 
+  mutate(
+    tanggal = as.POSIXct(tanggal / 1000, origin = "1970-01-01"),
+    tanggal = as.Date(tanggal)
+  )
+str(new_cov_jabar)  
+
+#Menjinakkan data karena terdapat kejanggalan data pada kolom tanggal dan format penulisan kolom yang tidak konsisten
+
+
+#11
+library(ggplot2)
+library(hrbrthemes)
+ggplot(new_cov_jabar, aes(x = tanggal, y = kasus_baru)) +
+  geom_col()
+
+#membuat plot dari new_cov_jabar
+
+
+#12
+library(ggplot2)
+library(hrbrthemes)
+ggplot(new_cov_jabar, aes(tanggal, kasus_baru)) +
+ geom_col(fill = "salmon") +
+  labs(
+    x = NULL,
+    y = "Jumlah kasus",
+    title = "Kasus Harian Positif COVID-19 di Jawa Barat",
+    subtitle = "Terjadi pelonjakan kasus di awal bulan Juli akibat klaster Secapa AD Bandung",
+    caption = "Sumber data: covid.19.go.id"
+  ) +
+  theme_ipsum(
+    base_size = 13,
+    plot_title_size = 21,
+    grid = "Y",
+    ticks = TRUE
+  ) +
+  theme(plot.title.position = "plot")
+
+
+#13
+library(ggplot2)
+library(hrbrthemes)
+ggplot(new_cov_jabar, aes(tanggal, sembuh)) +
+  geom_col(fill = "olivedrab2") +
+  labs(
+    x = NULL,
+    y = "Jumlah kasus",
+    title = "Kasus Harian Sembuh Dari COVID-19 di Jawa Barat",
+    caption = "Sumber data: covid.19.go.id"
+  ) +
+  theme_ipsum(
+    base_size = 13, 
+    plot_title_size = 21,
+    grid = "Y",
+    ticks = TRUE
+  ) +
+  theme(plot.title.position = "plot")
+  
+  
+  #14
+  library(ggplot2)
+library(hrbrthemes)
+ggplot(new_cov_jabar, aes(tanggal, meninggal)) +
+  geom_col(fill = "darkslategray4") +
+  labs(
+    x = NULL,
+    y = "Jumlah kasus",
+    title = "Kasus Harian Meninggal Akibat COVID-19 di Jawa Barat",
+    caption = "Sumber data: covid.19.go.id"
+  ) +
+  theme_ipsum(
+    base_size = 13, 
+    plot_title_size = 21,
+    grid = "Y",
+    ticks = TRUE
+  ) +
+  theme(plot.title.position = "plot")
+  
+  
+  #15
